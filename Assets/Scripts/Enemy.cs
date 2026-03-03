@@ -6,6 +6,16 @@ public class EnemyMovement : MonoBehaviour
     [Header("Movement")]
     [SerializeField] private float moveSpeed = 5f;
     [SerializeField] private float flightHeight = 2f;
+    [SerializeField] private float turnSpeed = 12f;
+
+    [Header("Idle")]
+    [SerializeField] private float idleCircleRadius = 2.5f;
+    [SerializeField] private float idleCircleSpeed = 1.5f;
+
+    [Header("Idle Area")]
+    [SerializeField] private Transform hoverCenter;
+    [SerializeField] private Vector2 hoverAreaSize = new Vector2(10f, 10f);
+    [SerializeField] private float hoverEdgePadding = 0.35f;
 
     [Header("Detection")]
     [SerializeField] private float playerDetectionRange = 8f;
@@ -40,6 +50,12 @@ public class EnemyMovement : MonoBehaviour
     public Transform CropTarget => cropTarget;
     public float MoveSpeed => moveSpeed;
     public float FlightHeight => flightHeight;
+    public float TurnSpeed => turnSpeed;
+    public float IdleCircleRadius => idleCircleRadius;
+    public float IdleCircleSpeed => idleCircleSpeed;
+    public Transform HoverCenter => hoverCenter;
+    public Vector2 HoverAreaSize => hoverAreaSize;
+    public float HoverEdgePadding => hoverEdgePadding;
     public float PlayerDetectionRange => playerDetectionRange;
     public float CropDetectionRange => cropDetectionRange;
     public float AttackRange => attackRange;
@@ -54,7 +70,16 @@ public class EnemyMovement : MonoBehaviour
     {
         spawnPoint = transform.position;
 
-        GameObject player = GameObject.FindGameObjectWithTag("Player");
+        GameObject player = null;
+        try
+        {
+            player = GameObject.FindGameObjectWithTag("Player");
+        }
+        catch (UnityException)
+        {
+            player = null;
+        }
+
         if (player != null)
         {
             playerTarget = player.transform;
@@ -144,7 +169,17 @@ public class EnemyMovement : MonoBehaviour
 
     public bool FindNearestCropTarget()
     {
-        GameObject[] crops = GameObject.FindGameObjectsWithTag("Crop");
+        GameObject[] crops;
+        try
+        {
+            crops = GameObject.FindGameObjectsWithTag("Crop");
+        }
+        catch (UnityException)
+        {
+            cropTarget = null;
+            return false;
+        }
+
         Transform nearest = null;
         float nearestDistance = float.MaxValue;
 
@@ -180,13 +215,43 @@ public class EnemyMovement : MonoBehaviour
 
         Vector3 lookDirection = desired - transform.position;
         lookDirection.y = 0f;
-        if (lookDirection.sqrMagnitude > 0.0001f)
+        RotateTowards(lookDirection, deltaTime);
+    }
+
+    public void RotateTowards(Vector3 direction, float deltaTime)
+    {
+        direction.y = 0f;
+        if (direction.sqrMagnitude <= 0.0001f)
         {
-            transform.rotation = Quaternion.Slerp(
-                transform.rotation,
-                Quaternion.LookRotation(lookDirection),
-                12f * deltaTime);
+            return;
         }
+
+        transform.rotation = Quaternion.Slerp(
+            transform.rotation,
+            Quaternion.LookRotation(direction),
+            turnSpeed * deltaTime);
+    }
+
+    public Vector3 GetIdleAreaCenter()
+    {
+        if (hoverCenter != null)
+        {
+            return hoverCenter.position;
+        }
+
+        return spawnPoint;
+    }
+
+    public Vector3 ClampToIdleArea(Vector3 worldPosition)
+    {
+        Vector3 center = GetIdleAreaCenter();
+        float halfX = Mathf.Max(0.1f, hoverAreaSize.x * 0.5f - hoverEdgePadding);
+        float halfZ = Mathf.Max(0.1f, hoverAreaSize.y * 0.5f - hoverEdgePadding);
+
+        worldPosition.x = Mathf.Clamp(worldPosition.x, center.x - halfX, center.x + halfX);
+        worldPosition.z = Mathf.Clamp(worldPosition.z, center.z - halfZ, center.z + halfZ);
+        worldPosition.y = flightHeight;
+        return worldPosition;
     }
 
     public void ScareAway()

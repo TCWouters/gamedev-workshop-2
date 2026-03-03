@@ -1526,7 +1526,7 @@ PrefabInstance:
       objectReference: {fileID: 2100000, guid: 9fa22a46eeb002c47b09eac228481ef8, type: 2}
     - target: {fileID: 919132149155446097, guid: 231943f8e7ac54143b896fe283fc7718, type: 3}
       propertyPath: m_Name
-      value: UnityWorkshop2_PlantSapling
+      value: Sapling
       objectReference: {fileID: 0}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

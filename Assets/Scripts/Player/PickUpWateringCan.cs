@@ -4,6 +4,7 @@ public class PickUpWateringCan : MonoBehaviour
 {
     void OnTriggerEnter(Collider other)
     {
+        // hi
         if (other.name == "Capsule")
         {
             transform.parent = other.transform;
